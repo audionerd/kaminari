@@ -23,10 +23,23 @@ module Kaminari
         @params = template.params.except(*PARAM_KEY_BLACKLIST).merge(@options.delete(:params) || {})
         # @params in Rails 5 does no more inherits from Hash but composes a Hash
         if @params.instance_variable_defined?(:@parameters) && !@params.respond_to?(:deep_merge)
-          @params = @params.instance_variable_get :@parameters
+          @params = params_to_hash_with_indifferent_access_recursive(@params)
         else
           @params = @params.with_indifferent_access
         end
+      end
+
+      # via https://gist.github.com/fguillen/1540618
+      def params_to_hash_with_indifferent_access_recursive(params)
+        result = params.instance_variable_get(:@parameters)
+
+        result.each do |key, value|
+          if(value.is_a? ActionController::Parameters)
+            result[key] = params_to_hash_with_indifferent_access_recursive(value)
+          end
+        end
+
+        result
       end
 
       def to_s(locals = {}) #:nodoc:
